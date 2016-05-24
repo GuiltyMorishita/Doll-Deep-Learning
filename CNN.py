@@ -4,7 +4,7 @@ import time
 import six.moves.cPickle as pickle
 from sklearn.datasets import fetch_mldata
 from sklearn.cross_validation import train_test_split
-from chainer import cuda, Variable, Chain, optimizers
+from chainer import cuda, Variable, Chain, optimizers, serializers
 import chainer.functions as F
 import chainer.links as L
 import numpy as np
@@ -14,7 +14,8 @@ class ImageNet(Chain):
         super(ImageNet, self).__init__(
             conv1 =  L.Convolution2D(3, 32, 5),
             conv2 =  L.Convolution2D(32, 32, 5),
-            l3 =     L.Linear(512, 512),
+            # l3 =     L.Linear(672, 1000),
+            l3 =     L.Linear(1568, 512),
             l4 =     L.Linear(512, n_outputs)
         )
 
@@ -27,6 +28,7 @@ class ImageNet(Chain):
         x, t = Variable(x_data), Variable(y_data)
         h = F.max_pooling_2d(F.relu(self.conv1(x)), ksize=2, stride=2)
         h = F.max_pooling_2d(F.relu(self.conv2(h)), ksize=3, stride=3)
+        # h = F.spatial_pyramid_pooling_2d(F.relu(self.conv2(h)), 3, F.MaxPooling2D)
         h = F.dropout(F.relu(self.l3(h)), train=train)
         y = self.l4(h)
         return F.softmax_cross_entropy(y, t), F.accuracy(y,t)
@@ -102,6 +104,8 @@ class CNN:
             print 'test mean loss={}, accuracy={}'.format(sum_test_loss/self.n_test, sum_test_accuracy/self.n_test)
 
             epoch += 1
+
+        serializers.save_hdf5('doll_model', self.model)
 
     def dump_model(self):
         self.model.to_cpu()

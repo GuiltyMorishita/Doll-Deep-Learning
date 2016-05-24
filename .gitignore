@@ -2,5 +2,7 @@ animeface-character-dataset/
 doll_image/
 test_image/
 dataset
+doll_model
 *.png
+*.jpg
 *.pyc
