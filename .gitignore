@@ -3,3 +3,4 @@ doll_image/
 test_image/
 dataset
 *.png
+*.pyc
