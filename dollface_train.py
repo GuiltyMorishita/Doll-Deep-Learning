@@ -1,6 +1,6 @@
 #! -*- coding: utf-8 -*-
 
-from CNN import CNN
+from CNN_DOLL import CNN
 from dollface import DollFaceDataset
 from chainer import cuda
 
