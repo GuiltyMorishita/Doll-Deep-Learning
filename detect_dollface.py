@@ -18,7 +18,7 @@ model = ImageNet(4)
 S.load_hdf5('doll_model', model)
 
 #キャラクターの名前
-chara_name = ['blythe', "dd", "pullip", "sd"]
+chara_name = ['blythe', "dreamdollfie", "pullip", "sahra", "superdollfie", "xcute"]
 
 #伝播の設定
 def forward(x_data):

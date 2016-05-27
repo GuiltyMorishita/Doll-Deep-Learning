@@ -117,12 +117,12 @@ class CNN:
             f.write(log)
         serializers.save_hdf5('doll_model', self.model)
 
-    def dump_model(self):
-        self.model.to_cpu()
-        pickle.dump(self.model, open(self.model_name, 'wb'), -1)
-
-    def load_model(self):
-        self.model = pickle.load(open(self.model_name,'rb'))
-        if self.gpu >= 0:
-            self.model.to_gpu()
-        self.optimizer.setup(self.model.collect_parameters())
+    # def dump_model(self):
+    #     self.model.to_cpu()
+    #     pickle.dump(self.model, open(self.model_name, 'wb'), -1)
+    #
+    # def load_model(self):
+    #     self.model = pickle.load(open(self.model_name,'rb'))
+    #     if self.gpu >= 0:
+    #         self.model.to_gpu()
+    #     self.optimizer.setup(self.model.collect_parameters())

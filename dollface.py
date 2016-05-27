@@ -4,6 +4,7 @@ import os
 import six.moves.cPickle as pickle
 import numpy as np
 import cv2 as cv
+import re
 
 class DollFaceDataset:
     def __init__(self):
@@ -11,7 +12,7 @@ class DollFaceDataset:
         self.data = None
         self.target = None
         self.n_types_target = -1
-        self.dump_name = u'dataset'
+        self.dump_name = u'doll_dataset'
         self.image_size = 50
 
     def get_dir_list(self):
@@ -26,31 +27,63 @@ class DollFaceDataset:
         return dir_list.index(dir_name[0])
 
     def load_data_target(self):
-        # if os.path.exists(self.dump_name):
-        #     self.load_dataset()
+        if os.path.exists(self.dump_name):
+            self.load_dataset()
+
         if self.target is None:
             dir_list = self.get_dir_list()
-            ret = {}
             self.target = []
             target_name = []
             self.data = []
-            print dir_list
+
+            #カスケードファイル読み込み
+            cascade_path = "./lbpcascade_animeface/lbpcascade_animeface.xml"
+            if not os.path.isfile(cascade_path):
+                raise RuntimeError("%s: not found" % cascade_path)
+            cascade = cv.CascadeClassifier(cascade_path)
+
             for dir_name in dir_list:
                 file_list = os.listdir(self.data_dir_path+dir_name)
+                pattern = re.compile(r'.*\.(jpg|jpeg|png)$', re.IGNORECASE)
                 for file_name in file_list:
-                    root, ext = os.path.splitext(file_name)
-                    if ext == u'.png' or ext == u'.jpg':
-                        abs_name = self.data_dir_path+dir_name+'/'+file_name
-                        # read class id i.e., target
-                        class_id = self.get_class_id(abs_name)
-                        self.target.append(class_id)
-                        target_name.append(str(dir_name))
-                        # read image i.e., data
-                        image = cv.imread(abs_name)
+                    matchOB = re.match(pattern, file_name)
+                    abs_name = self.data_dir_path+dir_name+'/'+file_name
+                    if matchOB is None:
+                        print('"' + abs_name + '" is not image file.')
+                        continue
+                    # read class id i.e., target
+                    class_id = self.get_class_id(abs_name)
+                    # 画像データの読み込み
+                    image = cv.imread(abs_name)
+                    #グレースケール変換
+                    gray = cv.cvtColor(image, cv.COLOR_BGR2GRAY)
+                    gray = cv.equalizeHist(gray)
+
+                    #顔認識実行
+                    facerect = cascade.detectMultiScale(gray,
+                        # detector options
+                        scaleFactor = 1.1,
+                        minNeighbors = 5,
+                        minSize = (self.image_size, self.image_size))
+
+                    for rect in facerect:
+                        #顔だけ切り出し
+                        x = rect[0]
+                        y = rect[1]
+                        width = rect[2]
+                        height = rect[3]
+                        image = image[y:y+height, x:x+width]
+                        if image.shape[0] < self.image_size or image.shape[1] < self.image_size:
+                            continue
+                        # new_image_path = "./test_image" + "/" + file_name
+                        # cv.imwrite(new_image_path, image)
                         image = cv.resize(image, (self.image_size, self.image_size))
                         image = image.transpose(2,0,1)
                         image = image/255.
+
                         self.data.append(image)
+                        self.target.append(class_id)
+                        target_name.append(str(dir_name))
 
             self.index2name = {}
             for i in xrange(len(self.target)):
@@ -78,3 +111,6 @@ class DollFaceDataset:
 
     def load_dataset(self):
         self.data, self.target, self.index2name = pickle.load(open(self.dump_name, 'rb'))
+
+# dataset = DollFaceDataset()
+# dataset.load_data_target()
