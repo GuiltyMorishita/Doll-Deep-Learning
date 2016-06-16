@@ -36,7 +36,28 @@ class ImageNet(Chain):
         # h = F.spatial_pyramid_pooling_2d(F.relu(self.conv2(h)), 3, F.MaxPooling2D)
         h = F.dropout(F.relu(self.l3(h)), train=train)
         y = self.l4(h)
+
+
+        if train == False: # 評価時にのみ以下を実行
+            cnt = 0
+            missid = []
+
+            for ydata in y.data:
+                # ファイル出力して確認するなら
+                # fp_.write(str(np.argmax(ydata)))
+                # fp_.write(' ')
+
+                if y_data[cnt] != np.argmax(ydata):
+                    # 識別に失敗したデータを出力する処理．
+                    missid.append(glob_z_test[z_batch[cnt]])
+
+                cnt += 1
+
+            glob_all_missid.extend(missid)
+                # 全バッチにおいて識別失敗した id を格納
+
         return F.softmax_cross_entropy(y, t), F.accuracy(y,t)
+
 
     def predict(self, x_test, gpu=-1):
         if gpu >= 0:
@@ -52,6 +73,7 @@ class ImageNet(Chain):
             predictions = np.append(predictions, np.array([np.argmax(o)], np.float32))
         return predictions
 
+
 class CNN:
     def __init__(self, data, target, n_outputs, gpu=-1):
 
@@ -63,10 +85,15 @@ class CNN:
 
         self.gpu = gpu
 
+        file_ids = range(len(target))
+        global glob_z_test
+
         self.x_train,\
         self.x_test,\
         self.y_train,\
-        self.y_test = train_test_split(data, target, test_size=0.1)
+        self.y_test,\
+        self.z_train,\
+        glob_z_test = train_test_split(data, target, file_ids, test_size=0.1)
 
         self.n_train = len(self.y_train)
         self.n_test = len(self.y_test)
@@ -83,6 +110,9 @@ class CNN:
         epoch = 1
         best_accuracy = 0
         log = ""
+
+
+
         while epoch <= n_epoch:
             print 'epoch', epoch
             log = log + 'epoch ' + str(epoch) + '\n'
@@ -90,10 +120,13 @@ class CNN:
             perm = np.random.permutation(self.n_train)
             sum_train_accuracy = 0
             sum_train_loss = 0
+
+            global glob_all_missid
+            glob_all_missid = []
+
             for i in xrange(0, self.n_train, batchsize):
                 x_batch = self.x_train[perm[i:i+batchsize]]
                 y_batch = self.y_train[perm[i:i+batchsize]]
-
                 real_batchsize = len(x_batch)
 
                 self.optimizer.zero_grads()
@@ -115,6 +148,9 @@ class CNN:
                 x_batch = self.x_test[i:i+batchsize]
                 y_batch = self.y_test[i:i+batchsize]
 
+                global z_batch
+                z_batch = range(i, i+batchsize)
+
                 real_batchsize = len(x_batch)
 
                 loss, acc = self.model.forward(x_batch, y_batch, train=False, gpu=self.gpu)
@@ -134,9 +170,11 @@ class CNN:
         log = log + str(confmat)
 
         d = datetime.datetime.today()
+
         log_filename = "log_64x64_2592_" + d.strftime("%Y-%m-%d_%H%M%S") + ".txt"
         with open(log_filename, "w") as f:
             f.write(log)
+
         serializers.save_hdf5('doll_model', self.model)
 
 
