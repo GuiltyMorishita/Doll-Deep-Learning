@@ -5,5 +5,8 @@ doll_dataset
 doll_model
 *.png
 *.jpg
+*.JPG
+*.jpeg
 *.pyc
+*.db
 log*

@@ -5,15 +5,16 @@ import six.moves.cPickle as pickle
 import numpy as np
 import cv2 as cv
 import re
+import shutil
 
 class DollFaceDataset:
     def __init__(self):
-        self.data_dir_path = u"./doll_image/"
+        self.data_dir_path = u"./dealer_image/"
         self.data = None
         self.target = None
         self.n_types_target = -1
         self.dump_name = u'doll_dataset'
-        self.image_size = 50
+        self.image_size = 32
 
     def get_dir_list(self):
         tmp = os.listdir(self.data_dir_path)
@@ -42,7 +43,9 @@ class DollFaceDataset:
                 raise RuntimeError("%s: not found" % cascade_path)
             cascade = cv.CascadeClassifier(cascade_path)
 
+            shutil.rmtree("./dealer_test_image")
             for dir_name in dir_list:
+                os.makedirs("./dealer_test_image" + "/" + dir_name)
                 file_list = os.listdir(self.data_dir_path+dir_name)
                 pattern = re.compile(r'.*\.(jpg|jpeg|png)$', re.IGNORECASE)
                 for file_name in file_list:
@@ -62,7 +65,8 @@ class DollFaceDataset:
                     #顔認識実行
                     facerect = cascade.detectMultiScale(gray,
                         # detector options
-                        scaleFactor = 1.1,
+                        scaleFactor = 1.15, # dealer
+                        # scaleFactor = 1.10, # brand
                         minNeighbors = 5,
                         minSize = (self.image_size, self.image_size))
 
@@ -75,9 +79,9 @@ class DollFaceDataset:
                         image = image[y:y+height, x:x+width]
                         if image.shape[0] < self.image_size or image.shape[1] < self.image_size:
                             continue
-                        # new_image_path = "./test_image" + "/" + file_name
-                        # cv.imwrite(new_image_path, image)
                         image = cv.resize(image, (self.image_size, self.image_size))
+                        new_image_path = "./dealer_test_image" + "/" + dir_name + "/" + file_name
+                        cv.imwrite(new_image_path, image)
                         image = image.transpose(2,0,1)
                         image = image/255.
 

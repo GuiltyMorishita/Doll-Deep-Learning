@@ -13,10 +13,12 @@ import datetime
 class ImageNet(Chain):
     def __init__(self, n_outputs):
         super(ImageNet, self).__init__(
-            conv1 =  L.Convolution2D(3, 32, 5),
+            conv1 =  L.Convolution2D(3, 32, 5), #padding=0, stride=1 filtersize=5
             conv2 =  L.Convolution2D(32, 32, 5),
-            # l3 =     L.Linear(672, 1000),
-            l3 =     L.Linear(1568, 512),
+
+            l3 =     L.Linear(512, 512), #32
+            # l3 =     L.Linear(1568, 512), #50
+            # l3 =     L.Linear(2592, 512), #64
             l4 =     L.Linear(512, n_outputs)
         )
 
@@ -27,7 +29,7 @@ class ImageNet(Chain):
             y_data = cuda.to_gpu(y_data)
 
         x, t = Variable(x_data), Variable(y_data)
-        h = F.max_pooling_2d(F.relu(self.conv1(x)), ksize=2, stride=2)
+        h = F.max_pooling_2d(F.relu(self.conv1(x)), ksize=2, stride=2) # padding=0
         h = F.max_pooling_2d(F.relu(self.conv2(h)), ksize=3, stride=3)
         # h = F.spatial_pyramid_pooling_2d(F.relu(self.conv2(h)), 3, F.MaxPooling2D)
         h = F.dropout(F.relu(self.l3(h)), train=train)
@@ -112,7 +114,7 @@ class CNN:
 
             epoch += 1
         d = datetime.datetime.today()
-        log_filename = "log_" + d.strftime("%Y-%m-%d_%H%M%S") + ".txt"
+        log_filename = "log_32x32_512_" + d.strftime("%Y-%m-%d_%H%M%S") + ".txt"
         with open(log_filename, "w") as f:
             f.write(log)
         serializers.save_hdf5('doll_model', self.model)
