@@ -9,6 +9,8 @@ import chainer.functions as F
 import chainer.links as L
 import numpy as np
 import datetime
+from sklearn.metrics import confusion_matrix
+
 
 class ImageNet(Chain):
     def __init__(self, n_outputs):
@@ -16,9 +18,9 @@ class ImageNet(Chain):
             conv1 =  L.Convolution2D(3, 32, 5), #padding=0, stride=1 filtersize=5
             conv2 =  L.Convolution2D(32, 32, 5),
 
-            l3 =     L.Linear(512, 512), #32
+            # l3 =     L.Linear(512, 512), #32
             # l3 =     L.Linear(1568, 512), #50
-            # l3 =     L.Linear(2592, 512), #64
+            l3 =     L.Linear(2592, 512), #64
             l4 =     L.Linear(512, n_outputs)
         )
 
@@ -36,7 +38,19 @@ class ImageNet(Chain):
         y = self.l4(h)
         return F.softmax_cross_entropy(y, t), F.accuracy(y,t)
 
-
+    def predict(self, x_test, gpu=-1):
+        if gpu >= 0:
+            x_test = cuda.to_gpu(x_test)
+        x = Variable(x_test)
+        h = F.max_pooling_2d(F.relu(self.conv1(x)), ksize=2, stride=2) # padding=0
+        h = F.max_pooling_2d(F.relu(self.conv2(h)), ksize=3, stride=3)
+        # h = F.spatial_pyramid_pooling_2d(F.relu(self.conv2(h)), 3, F.MaxPooling2D)
+        h = F.dropout(F.relu(self.l3(h)))
+        y = self.l4(h)
+        predictions = np.array([], np.float32)
+        for o in y.data:
+            predictions = np.append(predictions, np.array([np.argmax(o)], np.float32))
+        return predictions
 
 class CNN:
     def __init__(self, data, target, n_outputs, gpu=-1):
@@ -60,8 +74,8 @@ class CNN:
         self.optimizer = optimizers.Adam()
         self.optimizer.setup(self.model)
 
-    def predict(self, x_data, gpu=-1):
-        return self.model.predict(x_data, gpu)
+    def predict(self, x_test, gpu=-1):
+        return self.model.predict(x_test, gpu)
 
 
     def train_and_test(self, n_epoch=100, batchsize=100):
@@ -113,11 +127,18 @@ class CNN:
             log = log + test_mean + '\n'
 
             epoch += 1
+
+        yh = self.predict(self.x_test,gpu=1)
+        confmat = confusion_matrix(self.y_test, yh)
+        print confmat
+        log = log + str(confmat)
+
         d = datetime.datetime.today()
-        log_filename = "log_32x32_512_" + d.strftime("%Y-%m-%d_%H%M%S") + ".txt"
+        log_filename = "log_64x64_2592_" + d.strftime("%Y-%m-%d_%H%M%S") + ".txt"
         with open(log_filename, "w") as f:
             f.write(log)
         serializers.save_hdf5('doll_model', self.model)
+
 
     # def dump_model(self):
     #     self.model.to_cpu()

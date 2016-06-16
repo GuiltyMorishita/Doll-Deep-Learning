@@ -19,4 +19,4 @@ cnn = CNN(data = data,
           gpu = 0,
           n_outputs = n_outputs)
 
-cnn.train_and_test(n_epoch = 100)
+cnn.train_and_test(n_epoch=100)
