@@ -34,6 +34,25 @@ class ImageNet(Chain):
         # h = F.spatial_pyramid_pooling_2d(F.relu(self.conv2(h)), 3, F.MaxPooling2D)
         h = F.dropout(F.relu(self.l3(h)), train=train)
         y = self.l4(h)
+
+
+        if train == False: # 評価時にのみ以下を実行
+            cnt = 0
+            missid = []
+
+            for ydata in y.data:
+                # ファイル出力して確認するなら
+                # fp_.write(str(np.argmax(ydata)))
+                # fp_.write(' ')
+
+                if y_data[cnt] != np.argmax(ydata):
+                    # 識別に失敗したデータを出力する処理．
+                    missid.append(glob_z_test[z_batch[cnt]])
+                    cnt += 1
+
+                glob_all_missid.extend(missid)
+                # 全バッチにおいて識別失敗した id を格納
+
         return F.softmax_cross_entropy(y, t), F.accuracy(y,t)
 
 
@@ -49,10 +68,15 @@ class CNN:
 
         self.gpu = gpu
 
+        file_ids = range(len(target))
+        global glob_z_test
+
         self.x_train,\
         self.x_test,\
         self.y_train,\
-        self.y_test = train_test_split(data, target, test_size=0.1)
+        self.y_test, \
+        self.z_train,\
+        glob_z_test = train_test_split(data, target, file_ids, test_size=0.1)
 
         self.n_train = len(self.y_train)
         self.n_test = len(self.y_test)
@@ -115,8 +139,8 @@ class CNN:
             epoch += 1
         d = datetime.datetime.today()
         log_filename = "log_32x32_512_" + d.strftime("%Y-%m-%d_%H%M%S") + ".txt"
-        with open(log_filename, "w") as f:
-            f.write(log)
+        # with open(log_filename, "w") as f:
+            # f.write(log)
         serializers.save_hdf5('doll_model', self.model)
 
     # def dump_model(self):
