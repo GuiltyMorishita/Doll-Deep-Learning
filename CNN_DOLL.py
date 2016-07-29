@@ -10,17 +10,17 @@ import chainer.links as L
 import numpy as np
 import datetime
 from sklearn.metrics import confusion_matrix
-
+import dalmatian
 
 class ImageNet(Chain):
     def __init__(self, n_outputs):
         super(ImageNet, self).__init__(
-            conv1 =  L.Convolution2D(3, 32, 5), #padding=0, stride=1 filtersize=5
-            conv2 =  L.Convolution2D(32, 32, 5),
+            conv1 =  L.Convolution2D(3, 96, 11), #padding=0, stride=1 filtersize=5
+            conv2 =  L.Convolution2D(96, 96, 11),
 
-            # l3 =     L.Linear(512, 512), #32
+            l3 =     L.Linear(3456, 512), #32
             # l3 =     L.Linear(1568, 512), #50
-            l3 =     L.Linear(2592, 512), #64
+            # l3 =     L.Linear(1152, 512), #64
             l4 =     L.Linear(512, n_outputs)
         )
 
@@ -167,16 +167,32 @@ class CNN:
         yh = self.predict(self.x_test,gpu=1)
         confmat = confusion_matrix(self.y_test, yh)
         print confmat
+        # labels = ["blythe", "dollfiedream", "pullip", "sahra", "superdollfie", "xcute"]
+        labels = ["A", "B", "C", "D"]
+        mx = dalmatian.Matrix(labels, confmat)
+
+        #Options
+        # mx.cell_size = 10.0 #[mm]
+        # mx.font_size = 14
+        # mx.label_font_size = 7
+        mx.cell_color = "black" #black, red, yellow, green, blue, purple
+        mx.label_color = "black" #black, white
+        mx.line_type = "normal" #normal, dot
+        mx.percentage = True
+        mx.draw()
+
+
         log = log + str(confmat)
 
         d = datetime.datetime.today()
 
-        log_filename = "log_64x64_2592_" + d.strftime("%Y-%m-%d_%H%M%S") + ".txt"
-        with open(log_filename, "w") as f:
-            f.write(log)
+        log_filename = "log_32x32_512_" + d.strftime("%Y-%m-%d_%H%M%S") + ".txt"
+        # with open(log_filename, "w") as f:
+        #     f.write(log)
 
-        serializers.save_hdf5('doll_model', self.model)
+        serializers.save_hdf5('dealer_doll_model', self.model)
 
+        return glob_all_missid
 
     # def dump_model(self):
     #     self.model.to_cpu()

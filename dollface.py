@@ -9,12 +9,13 @@ import shutil
 
 class DollFaceDataset:
     def __init__(self):
-        self.data_dir_path = u"./doll_image/"
+        self.data_dir_path = u"./dealer_image/"
         self.data = None
         self.target = None
         self.n_types_target = -1
         self.dump_name = u'doll_dataset'
-        self.image_size = 64
+        self.image_size = 50
+        self.index2filename = {}
 
     def get_dir_list(self):
         tmp = os.listdir(self.data_dir_path)
@@ -43,9 +44,13 @@ class DollFaceDataset:
                 raise RuntimeError("%s: not found" % cascade_path)
             cascade = cv.CascadeClassifier(cascade_path)
 
-            shutil.rmtree("./test_image")
+            if os.path.exists("./dataset_image"):
+                shutil.rmtree("./dataset_image")
+
+            cnt = 0
             for dir_name in dir_list:
-                os.makedirs("./test_image" + "/" + dir_name)
+                print(dir_name)
+                os.makedirs("./dataset_image" + "/" + dir_name)
                 file_list = os.listdir(self.data_dir_path+dir_name)
                 pattern = re.compile(r'.*\.(jpg|jpeg|png)$', re.IGNORECASE)
                 for file_name in file_list:
@@ -65,12 +70,13 @@ class DollFaceDataset:
                     #顔認識実行
                     facerect = cascade.detectMultiScale(gray,
                         # detector options
-                        # scaleFactor = 1.15, # dealer
-                        scaleFactor = 1.1, # brand
+                        scaleFactor = 1.15, # dealer
+                        # scaleFactor = 1.10, # brand
                         minNeighbors = 5,
                         minSize = (self.image_size, self.image_size))
 
-                    for rect in facerect:
+                    for (i, rect) in enumerate(facerect):
+                        print(i)
                         #顔だけ切り出し
                         x = rect[0]
                         y = rect[1]
@@ -80,7 +86,8 @@ class DollFaceDataset:
                         if image.shape[0] < self.image_size or image.shape[1] < self.image_size:
                             continue
                         image = cv.resize(image, (self.image_size, self.image_size))
-                        new_image_path = "./test_image" + "/" + dir_name + "/" + file_name
+                        root, ext = os.path.splitext(file_name)
+                        new_image_path = "./dataset_image" + "/" + dir_name + "/" + root + "_" + str(i) + ext
                         cv.imwrite(new_image_path, image)
                         image = image.transpose(2,0,1)
                         image = image/255.
@@ -89,6 +96,10 @@ class DollFaceDataset:
                         self.target.append(class_id)
                         target_name.append(str(dir_name))
 
+                        self.index2filename[cnt] = dir_name + "/" + root + "_" + str(i) + ext
+                        cnt += 1
+
+            print(cnt)
             self.index2name = {}
             for i in xrange(len(self.target)):
                 self.index2name[self.target[i]] = target_name[i]
@@ -111,10 +122,10 @@ class DollFaceDataset:
         return len(tmp)
 
     def dump_dataset(self):
-        pickle.dump((self.data,self.target,self.index2name), open(self.dump_name, 'wb'), -1)
+        pickle.dump((self.data,self.target,self.index2name,self.index2filename), open(self.dump_name, 'wb'), -1)
 
     def load_dataset(self):
-        self.data, self.target, self.index2name = pickle.load(open(self.dump_name, 'rb'))
+        self.data, self.target, self.index2name, self.index2filename = pickle.load(open(self.dump_name, 'rb'))
 
 # dataset = DollFaceDataset()
 # dataset.load_data_target()
