@@ -20,7 +20,7 @@ cnn = ALEX(data = data,
           gpu = 0,
           n_outputs = n_outputs)
 
-missIdList = cnn.train_and_test(n_epoch=100)
+missIdList, confmat = cnn.train_and_test(n_epoch=100)
 
 print(dataset.index2name)
 for missId in missIdList:

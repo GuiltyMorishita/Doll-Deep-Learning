@@ -9,12 +9,13 @@ import shutil
 
 class DollFaceDataset:
     def __init__(self):
+        # self.data_dir_path = u"./doll_image/"
         self.data_dir_path = u"./dealer_image/"
         self.data = None
         self.target = None
         self.n_types_target = -1
         self.dump_name = u'doll_dataset'
-        self.image_size = 50
+        self.image_size = 32
         self.index2filename = {}
 
     def get_dir_list(self):
