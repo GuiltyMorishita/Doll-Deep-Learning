@@ -11,7 +11,7 @@ from tqdm import tqdm
 cuda.init(0)
 missCountDict = {}
 confmats = []
-for i in tqdm(range(0, 100)):
+for i in tqdm(range(0, 10)):
     print 'load DollFace dataset'
     dataset = DollFaceDataset()
     dataset.load_data_target()
@@ -40,8 +40,8 @@ for k, v in sorted(missCountDict.items(), key=lambda x:x[1]):
 
 totalConfmat = reduce(lambda x,y: x+y, confmats)
 print totalConfmat
-# labels = ["blythe", "dollfiedream", "pullip", "sahra", "superdollfie", "xcute"]
-labels = ["A", "B", "C", "D"]
+labels = ["blythe", "dollfiedream", "pullip", "sahra", "superdollfie", "xcute"]
+# labels = ["A", "B", "C", "D"]
 mx = dalmatian.Matrix(labels, totalConfmat)
 
 #Options

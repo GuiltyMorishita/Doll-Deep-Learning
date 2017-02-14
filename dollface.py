@@ -15,7 +15,7 @@ class DollFaceDataset:
         self.target = None
         self.n_types_target = -1
         self.dump_name = u'doll_dataset'
-        self.image_size = 32
+        self.image_size = 64
         self.index2filename = {}
 
     def get_dir_list(self):
